@@ -1,34 +1,50 @@
+
 pipeline {
     agent any
+
+    environment {
+        DOCKER_IMAGE = 'chamithchathurya/allianz-app'
+    }
 
     stages {
         stage('SCM Checkout') {
             steps {
                 retry(3) {
-                    git branch: 'release', url: 'https://github.com/chamithchathurya/springboot-cicd'
+                    git branch: 'release',
+                        url: 'https://github.com/chamithchathurya/springboot-cicd'
                 }
             }
         }
+
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t chamithchathurya/allianz-app:%BUILD_NUMBER% .'
+                bat 'docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .'
             }
         }
+
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([file(credentialsId: '', variable: 'springboot-cicd-pass'), string(credentialsId: 'springboot-docker-pass', variable: 'springboot-cicd-password')]) {
-                    script {
-                        bat "docker login -u chamithchathurya -p ${springboot-cicd-password}"
-                    }
+                withCredentials([
+                    string(
+                        credentialsId: 'springboot-docker-pass',
+                        variable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    bat '''
+                        @echo off
+                        echo %DOCKER_PASS% | docker login -u chamithchathurya --password-stdin
+                    '''
                 }
             }
         }
+
         stage('Push Image') {
             steps {
-                bat 'docker push chamithchathurya/allianz-app:%BUILD_NUMBER%'
+                bat 'docker push %DOCKER_IMAGE%:%BUILD_NUMBER%'
             }
         }
     }
+
     post {
         always {
             bat 'docker logout'
