@@ -18,6 +18,6 @@ public class TestController {
 
     @PostConstruct
     public void init() {
-        log.info("Application working....");
+        log.info("Application working now......");
     }
 }
